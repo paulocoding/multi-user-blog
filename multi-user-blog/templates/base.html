@@ -5,9 +5,38 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <style media="screen">
+    .pad{
+      padding: 15px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
+    <!-- header -->
+    <header class="page-header clearfix">
+      <h1>MU-Blog <small>A blog for all</small></h1>
+      <div class="btn-group" role="group">
+        <a class="btn btn-primary btn-lg" href="/">Home</a>
+        {% if logged %}
+          <a class="btn btn-default btn-lg" href="/new">New Post</a>
+        {% endif %}
+      </div>
+      <div class="btn-group pull-right" role="group">
+        {% if not logged %}
+          <a class="btn btn-success btn-lg" href="/login">Login</a>
+          <a class="btn btn-warning btn-lg" href="/signup">Register</a>
+        {% else %}
+          <a class="btn btn-danger btn-lg" href="/logout">Logout</a>
+        {% endif %}
+      </div>
+    </header>
+    {% if general_error %}
+      <div>
+        <p class="bg-danger text-danger pad">{{ general_error }}</p>
+      </div>
+    {% endif %}
+
     {% block content %}
     {% endblock %}
   </div>
