@@ -1,3 +1,4 @@
+"""User class and related methods."""
 import re
 from google.appengine.ext import db
 import random
@@ -34,7 +35,7 @@ def valid_login(name, pw, h):
     return h == make_pw_hash(name, pw, salt)
 
 
-def getUser(username):
+def get_user(username):
     """Get the user object from the db for provided user name."""
     users = db.GqlQuery("SELECT * FROM User")
     for usr in users:
@@ -91,3 +92,7 @@ class User(db.Model):
         userid = str(self.key().id())
         cookieUser = make_user_hash(userid, SECRET)
         response.set_cookie("user", cookieUser)
+
+    def get_id(self):
+        """Return current User id."""
+        return self.key().id()
