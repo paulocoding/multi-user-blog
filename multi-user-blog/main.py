@@ -17,14 +17,16 @@
 import os
 import webapp2
 import jinja2
-from google.appengine.ext import db
+import user
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
+
 class Post(object):
     """docstring for Post."""
+
     def __init__(self, title, content, author, likes):
         super(Post, self).__init__()
         self.title = title
@@ -32,7 +34,10 @@ class Post(object):
         self.author = author
         self.likes = likes
 
+
 class Handler(webapp2.RequestHandler):
+    """Handler helper methods."""
+
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
@@ -53,21 +58,96 @@ posts.append(Post("Post Title", "Lorem ipsum dolor sit amet, consectetur \
                    pariatur. Excepteur sint occaecat cupidatat non proident, \
                    sunt in culpa qui officia deserunt mollit anim id est \
                    laborum.", "me", 0))
+posts.append(Post("Post 2", "Sed do eiusmod tempor incididunt ut labore\
+                  et dolore magna aliqua. Ut enim ad minim veniam, quis \
+                  nostrud exercitation ullamco laboris nisi ut aliquip ex ea \
+                  commodo consequat. Duis aute irure dolor in reprehenderit \
+                  in voluptate velit esse cillum dolore eu fugiat nulla \
+                  pariatur. Excepteur sint occaecat cupidatat non proident, \
+                  sunt in culpa qui officia deserunt mollit anim id est \
+                  laborum.", "me", 0))
+
+
 class MainHandler(Handler):
+    """Main page."""
+
     def get(self):
         general_error = ""
         self.render("home.html", logged=False, general_error=general_error,
                     posts=posts, user="")
+
+
 class SignupHandler(Handler):
+    """Signup page."""
+
     def get(self):
-        general_error = "Form Contain some errors"
-        error_user = "User already exists"
+        general_error = ""
+        error_user = ""
         error_email = ""
         error_pw = ""
         error_verify = ""
+        username = ""
+        email = ""
         self.render("signup.html", logged=False, general_error=general_error,
+                    username=username, email=email,
                     error_user=error_user, error_email=error_email,
                     error_pw=error_pw, error_verify=error_verify)
+
+    def post(self):
+        # getting form values
+        username = self.request.get("username")
+        pw = self.request.get("password")
+        pw2 = self.request.get("verify")
+        email = self.request.get("email")
+
+        # initializing error messages
+        general_error = ""
+        error_user = ""
+        error_email = ""
+        error_pw = ""
+        error_verify = ""
+
+        # validating form
+
+        userValid = user.valid_username(username)
+        userExists = False
+        if userValid:
+            userExists = user.userExists(username)
+        pwValid = user.valid_password(pw)
+        pwMatch = pw == pw2
+        emailValid = True
+        if email:
+            emailValid = user.valid_email(email)
+        else:
+            email = ''
+
+        if not userValid:
+            error_user = 'Invalid Name'
+        if userExists:
+            error_user = 'User name already taken'
+        if not pwValid:
+            error_pw = 'Invalid password'
+        if not pwMatch:
+            error_verify = "Passwords don't match"
+        if not emailValid:
+            error_email = 'Invalid email'
+
+        if userValid and pwValid and pwMatch and emailValid and not userExists:
+            # generate password Hash
+            pwhash = user.make_pw_hash(username, pw)
+            # save user to db
+            u = user.User(name=username, pwhash=pwhash, email=email)
+            u.put()
+            # set user cookie
+            u.set_cookie(self.response)
+
+            self.redirect('welcome')
+        else:
+            self.render("signup.html", logged=False,
+                        general_error=general_error,
+                        username=username, email=email,
+                        error_user=error_user, error_email=error_email,
+                        error_pw=error_pw, error_verify=error_verify)
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/signup', SignupHandler)
