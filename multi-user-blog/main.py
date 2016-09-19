@@ -58,7 +58,17 @@ class MainHandler(Handler):
         general_error = ""
         self.render("home.html", logged=False, general_error=general_error,
                     posts=posts, user="")
-
+class SignupHandler(Handler):
+    def get(self):
+        general_error = "Form Contain some errors"
+        error_user = "User already exists"
+        error_email = ""
+        error_pw = ""
+        error_verify = ""
+        self.render("signup.html", logged=False, general_error=general_error,
+                    error_user=error_user, error_email=error_email,
+                    error_pw=error_pw, error_verify=error_verify)
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+    ('/', MainHandler),
+    ('/signup', SignupHandler)
 ], debug=True)
