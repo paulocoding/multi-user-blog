@@ -59,6 +59,21 @@ def set_user_cookie(response, user):
     cookieUser = make_user_hash(userid, SECRET)
     response.set_cookie("user", cookieUser)
 
+
+def del_user_cookie(response):
+    """Delete the user cookie."""
+    response.delete_cookie('user')
+
+
+def get_user_logged(request):
+    """Return the current logged user based on cookie, or None."""
+    cookieUser = request.cookies.get('user')
+    if cookieUser:
+        if is_userid_valid(cookieUser):
+            user = User.get_by_id(int(cookieUser.split('|')[0]))
+            return user
+    return None
+
 # Form fields validation
 
 

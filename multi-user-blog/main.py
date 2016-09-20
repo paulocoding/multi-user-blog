@@ -73,8 +73,12 @@ class MainHandler(Handler):
 
     def get(self):
         general_error = ""
-        self.render("home.html", logged=False, general_error=general_error,
-                    posts=posts, user="")
+        logged_user = user.get_user_logged(self.request)
+        logged = False
+        if logged_user:
+            logged = True
+        self.render("home.html", logged=logged, general_error=general_error,
+                    posts=posts, user=logged_user)
 
 
 class SignupHandler(Handler):
@@ -148,7 +152,17 @@ class SignupHandler(Handler):
                         username=username, email=email,
                         error_user=error_user, error_email=error_email,
                         error_pw=error_pw, error_verify=error_verify)
+
+
+class LogoutHandler(Handler):
+    """logout current user."""
+
+    def get(self):
+        user.del_user_cookie(self.response)
+        self.redirect('/')
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
+    ('/logout', LogoutHandler),
     ('/signup', SignupHandler)
 ], debug=True)
