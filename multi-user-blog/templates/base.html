@@ -10,7 +10,7 @@
       padding: 15px;
     }
      .pad-sml{
-       padding: 5px;       
+       padding: 5px;
      }
   </style>
 </head>
@@ -21,12 +21,12 @@
       <h1>MU-Blog <small>A blog for all</small></h1>
       <div class="btn-group" role="group">
         <a class="btn btn-primary btn-lg" href="/">Home</a>
-        {% if logged %}
+        {% if user %}
           <a class="btn btn-default btn-lg" href="/new">New Post</a>
         {% endif %}
       </div>
       <div class="btn-group pull-right" role="group">
-        {% if not logged %}
+        {% if not user %}
           <a class="btn btn-success btn-lg" href="/login">Login</a>
           <a class="btn btn-warning btn-lg" href="/signup">Register</a>
         {% else %}

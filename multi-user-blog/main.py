@@ -74,10 +74,7 @@ class MainHandler(Handler):
     def get(self):
         general_error = ""
         logged_user = user.get_user_logged(self.request)
-        logged = False
-        if logged_user:
-            logged = True
-        self.render("home.html", logged=logged, general_error=general_error,
+        self.render("home.html", general_error=general_error,
                     posts=posts, user=logged_user)
 
 
@@ -85,17 +82,21 @@ class SignupHandler(Handler):
     """Signup page."""
 
     def get(self):
-        general_error = ""
-        error_user = ""
-        error_email = ""
-        error_pw = ""
-        error_verify = ""
-        username = ""
-        email = ""
-        self.render("signup.html", logged=False, general_error=general_error,
-                    username=username, email=email,
-                    error_user=error_user, error_email=error_email,
-                    error_pw=error_pw, error_verify=error_verify)
+        logged_user = user.get_user_logged(self.request)
+        if not logged_user:
+            general_error = ""
+            error_user = ""
+            error_email = ""
+            error_pw = ""
+            error_verify = ""
+            username = ""
+            email = ""
+            self.render("signup.html", general_error=general_error,
+                        username=username, email=email,
+                        error_user=error_user, error_email=error_email,
+                        error_pw=error_pw, error_verify=error_verify)
+        else:
+            self.redirect('/')
 
     def post(self):
         # getting form values
@@ -161,8 +162,57 @@ class LogoutHandler(Handler):
         user.del_user_cookie(self.response)
         self.redirect('/')
 
+
+class LoginHandler(Handler):
+    """logout current user."""
+
+    def get(self):
+        logged_user = user.get_user_logged(self.request)
+        if not logged_user:
+            general_error = ""
+            error_login = ""
+            self.render("login.html", general_error=general_error,
+                        error_login=error_login)
+        else:
+            self.redirect('/')
+
+    def post(self):
+        logged_user = user.get_user_logged(self.request)
+        if not logged_user:
+            username = self.request.get("username")
+            pw = self.request.get("password")
+            pwValid = user.valid_password(pw)
+            userValid = user.valid_username(username)
+            if pwValid and userValid:
+                user_obj = user.get_user(username)
+                if user.valid_login(username, pw, user_obj.pwhash):
+                    # set cookie
+                    user_obj.set_cookie(self.response)
+                    self.redirect('/welcome')
+            general_error = ""
+            error_login = "Invalid Login"
+            self.render("login.html", general_error=general_error,
+                        error_login=error_login)
+        else:
+            self.redirect('/')
+
+
+class WelcomeHandler(Handler):
+    """Welcomes user to the site."""
+
+    def get(self):
+        logged_user = user.get_user_logged(self.request)
+        if logged_user:
+            general_error = ""
+            self.render("welcome.html", general_error=general_error,
+                        user=logged_user)
+        else:
+            self.redirect('/')
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/logout', LogoutHandler),
-    ('/signup', SignupHandler)
+    ('/signup', SignupHandler),
+    ('/login', LoginHandler),
+    ('/welcome', WelcomeHandler)
 ], debug=True)
