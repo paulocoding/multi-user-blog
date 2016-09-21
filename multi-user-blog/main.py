@@ -19,21 +19,13 @@ import webapp2
 import jinja2
 import user
 import post
+import message
 
+
+# setting up jinja2
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
-
-
-class Post(object):
-    """docstring for Post."""
-
-    def __init__(self, title, content, author, likes):
-        super(Post, self).__init__()
-        self.title = title
-        self.content = content
-        self.author = author
-        self.likes = likes
 
 
 class Handler(webapp2.RequestHandler):
@@ -73,10 +65,10 @@ class MainHandler(Handler):
     """Main page."""
 
     def get(self):
-        general_error = ""
+        general_message = message.get_message(self.request, self.response)
         logged_user = user.get_user_logged(self.request)
         posts = post.get_all_posts()
-        self.render("home.html", general_error=general_error,
+        self.render("home.html", general_message=general_message,
                     posts=posts, user=logged_user)
 
 
@@ -86,14 +78,14 @@ class SignupHandler(Handler):
     def get(self):
         logged_user = user.get_user_logged(self.request)
         if not logged_user:
-            general_error = ""
+            general_message = message.get_message(self.request, self.response)
             error_user = ""
             error_email = ""
             error_pw = ""
             error_verify = ""
             username = ""
             email = ""
-            self.render("signup.html", general_error=general_error,
+            self.render("signup.html", general_message=general_message,
                         username=username, email=email,
                         error_user=error_user, error_email=error_email,
                         error_pw=error_pw, error_verify=error_verify)
@@ -108,7 +100,7 @@ class SignupHandler(Handler):
         email = self.request.get("email")
 
         # initializing error messages
-        general_error = ""
+        general_message = message.get_message(self.request, self.response)
         error_user = ""
         error_email = ""
         error_pw = ""
@@ -151,7 +143,7 @@ class SignupHandler(Handler):
             self.redirect('welcome')
         else:
             self.render("signup.html", logged=False,
-                        general_error=general_error,
+                        general_message=general_message,
                         username=username, email=email,
                         error_user=error_user, error_email=error_email,
                         error_pw=error_pw, error_verify=error_verify)
@@ -162,6 +154,7 @@ class LogoutHandler(Handler):
 
     def get(self):
         user.del_user_cookie(self.response)
+        message.set_message(self.response, "You have logged out.")
         self.redirect('/signup')
 
 
@@ -171,9 +164,9 @@ class LoginHandler(Handler):
     def get(self):
         logged_user = user.get_user_logged(self.request)
         if not logged_user:
-            general_error = ""
+            general_message = message.get_message(self.request, self.response)
             error_login = ""
-            self.render("login.html", general_error=general_error,
+            self.render("login.html", general_message=general_message,
                         error_login=error_login)
         else:
             self.redirect('/')
@@ -191,10 +184,11 @@ class LoginHandler(Handler):
                     # set cookie
                     user_obj.set_cookie(self.response)
                     self.redirect('/welcome')
-            general_error = ""
+            general_message = message.get_message(self.request, self.response)
             error_login = "Invalid Login"
-            self.render("login.html", general_error=general_error,
+            self.render("login.html", general_message=general_message,
                         error_login=error_login)
+            message.set_message(self.response, "You are now logged in")
         else:
             self.redirect('/')
 
@@ -205,8 +199,8 @@ class WelcomeHandler(Handler):
     def get(self):
         logged_user = user.get_user_logged(self.request)
         if logged_user:
-            general_error = ""
-            self.render("welcome.html", general_error=general_error,
+            general_message = message.get_message(self.request, self.response)
+            self.render("welcome.html", general_message=general_message,
                         user=logged_user)
         else:
             self.redirect('/')
@@ -218,9 +212,9 @@ class NewPostHandler(Handler):
     def get(self):
         logged_user = user.get_user_logged(self.request)
         if logged_user:
-            general_error = ""
+            general_message = message.get_message(self.request, self.response)
             error_post = ""
-            self.render("new_post.html", general_error=general_error,
+            self.render("new_post.html", general_message=general_message,
                         user=logged_user, error_post=error_post)
         else:
             self.redirect('/login')
@@ -234,18 +228,73 @@ class NewPostHandler(Handler):
                 new_post = post.Post(title=title, content=content,
                                      author_id=logged_user.get_id())
                 new_post.put()
+                message.set_message(self.response, "'%s' post added." % title)
                 self.redirect('/')
             else:
-                general_error = ""
+                general_message = ""
                 error_post = "Please fill in both title and post:   "
-                self.render("new_post.html", general_error=general_error,
+                self.render("new_post.html", general_message=general_message,
                             user=logged_user, error_post=error_post)
 
         else:
             self.redirect('/login')
 
 
+class PostHandler(Handler):
+    """Individual post page."""
 
+    def get(self, post_id):
+        logged_user = user.get_user_logged(self.request)
+        general_message = message.get_message(self.request, self.response)
+        current_post = post.get_post(post_id)
+        if current_post:
+            self.render("post.html", general_message=general_message,
+                        user=logged_user, post=current_post)
+        else:
+            self.render("no_post.html", general_message=general_message,
+                        user=logged_user)
+
+
+class DeletePostHandler(Handler):
+    """Individual post page."""
+
+    def get(self, post_id):
+        logged_user = user.get_user_logged(self.request)
+        current_post = post.get_post(post_id)
+        if current_post:
+            if logged_user.get_id() == current_post.author_id:
+                message.set_message(self.response,
+                                    "'%s' post deleted." % current_post.title)
+                current_post.delete()
+                self.redirect('/')
+            else:
+                message.set_message(self.response,
+                                    "Only the post author can delete a post")
+                self.redirect('/')
+
+        else:
+            general_message = message.get_message(self.request, self.response)
+            self.render("no_post.html", general_message=general_message,
+                        user=logged_user)
+
+
+class LikePostHandler(Handler):
+    """Individual post page."""
+
+    def get(self, post_id):
+        logged_user = user.get_user_logged(self.request)
+        current_post = post.get_post(post_id)
+        if current_post:
+                if current_post.like_me(logged_user.get_id()):
+                    message.set_message(self.response, "Post Liked")
+                else:
+                    message.set_message(self.response, "Post already Liked")
+                self.redirect('/')
+
+        else:
+            general_message = message.get_message(self.request, self.response)
+            self.render("no_post.html", general_message=general_message,
+                        user=logged_user)
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
@@ -253,5 +302,8 @@ app = webapp2.WSGIApplication([
     ('/signup', SignupHandler),
     ('/login', LoginHandler),
     ('/welcome', WelcomeHandler),
-    ('/new', NewPostHandler)
+    ('/new', NewPostHandler),
+    ('/post/(\d+)', PostHandler),
+    ('/like/(\d+)', LikePostHandler),
+    ('/delete/(\d+)', DeletePostHandler)
 ], debug=True)
