@@ -110,4 +110,4 @@ class User(db.Model):
 
     def get_id(self):
         """Return current User id."""
-        return self.key().id()
+        return str(self.key().id())

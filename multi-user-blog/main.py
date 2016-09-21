@@ -18,6 +18,7 @@ import os
 import webapp2
 import jinja2
 import user
+import post
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
@@ -48,24 +49,24 @@ class Handler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
-posts = []
-posts.append(Post("Post Title", "Lorem ipsum dolor sit amet, consectetur \
-                  adipisicing elit, sed do eiusmod tempor incididunt ut labore\
-                   et dolore magna aliqua. Ut enim ad minim veniam, quis \
-                   nostrud exercitation ullamco laboris nisi ut aliquip ex ea \
-                   commodo consequat. Duis aute irure dolor in reprehenderit \
-                   in voluptate velit esse cillum dolore eu fugiat nulla \
-                   pariatur. Excepteur sint occaecat cupidatat non proident, \
-                   sunt in culpa qui officia deserunt mollit anim id est \
-                   laborum.", "me", 0))
-posts.append(Post("Post 2", "Sed do eiusmod tempor incididunt ut labore\
-                  et dolore magna aliqua. Ut enim ad minim veniam, quis \
-                  nostrud exercitation ullamco laboris nisi ut aliquip ex ea \
-                  commodo consequat. Duis aute irure dolor in reprehenderit \
-                  in voluptate velit esse cillum dolore eu fugiat nulla \
-                  pariatur. Excepteur sint occaecat cupidatat non proident, \
-                  sunt in culpa qui officia deserunt mollit anim id est \
-                  laborum.", "me", 0))
+# posts = []
+# posts.append(Post("Post Title", "Lorem ipsum dolor sit amet, consectetur \
+#                   adipisicing elit, sed do eiusmod tempor incididunt ut labore\
+#                    et dolore magna aliqua. Ut enim ad minim veniam, quis \
+#                    nostrud exercitation ullamco laboris nisi ut aliquip ex ea \
+#                    commodo consequat. Duis aute irure dolor in reprehenderit \
+#                    in voluptate velit esse cillum dolore eu fugiat nulla \
+#                    pariatur. Excepteur sint occaecat cupidatat non proident, \
+#                    sunt in culpa qui officia deserunt mollit anim id est \
+#                    laborum.", "me", 0))
+# posts.append(Post("Post 2", "Sed do eiusmod tempor incididunt ut labore\
+#                   et dolore magna aliqua. Ut enim ad minim veniam, quis \
+#                   nostrud exercitation ullamco laboris nisi ut aliquip ex ea \
+#                   commodo consequat. Duis aute irure dolor in reprehenderit \
+#                   in voluptate velit esse cillum dolore eu fugiat nulla \
+#                   pariatur. Excepteur sint occaecat cupidatat non proident, \
+#                   sunt in culpa qui officia deserunt mollit anim id est \
+#                   laborum.", "me", 0))
 
 
 class MainHandler(Handler):
@@ -74,6 +75,7 @@ class MainHandler(Handler):
     def get(self):
         general_error = ""
         logged_user = user.get_user_logged(self.request)
+        posts = post.get_all_posts()
         self.render("home.html", general_error=general_error,
                     posts=posts, user=logged_user)
 
@@ -160,7 +162,7 @@ class LogoutHandler(Handler):
 
     def get(self):
         user.del_user_cookie(self.response)
-        self.redirect('/')
+        self.redirect('/signup')
 
 
 class LoginHandler(Handler):
@@ -209,10 +211,47 @@ class WelcomeHandler(Handler):
         else:
             self.redirect('/')
 
+
+class NewPostHandler(Handler):
+    """New Post form."""
+
+    def get(self):
+        logged_user = user.get_user_logged(self.request)
+        if logged_user:
+            general_error = ""
+            error_post = ""
+            self.render("new_post.html", general_error=general_error,
+                        user=logged_user, error_post=error_post)
+        else:
+            self.redirect('/login')
+
+    def post(self):
+        logged_user = user.get_user_logged(self.request)
+        if logged_user:
+            title = self.request.get('title')
+            content = self.request.get('content')
+            if title and content:
+                new_post = post.Post(title=title, content=content,
+                                     author_id=logged_user.get_id())
+                new_post.put()
+                self.redirect('/')
+            else:
+                general_error = ""
+                error_post = "Please fill in both title and post:   "
+                self.render("new_post.html", general_error=general_error,
+                            user=logged_user, error_post=error_post)
+
+        else:
+            self.redirect('/login')
+
+
+
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/logout', LogoutHandler),
     ('/signup', SignupHandler),
     ('/login', LoginHandler),
-    ('/welcome', WelcomeHandler)
+    ('/welcome', WelcomeHandler),
+    ('/new', NewPostHandler)
 ], debug=True)

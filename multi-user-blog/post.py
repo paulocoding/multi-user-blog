@@ -22,4 +22,4 @@ class Post(db.Model):
     created = db.DateTimeProperty(auto_now_add=True)
 
     def get_id(self):
-        return self.key().id()
+        return str(self.key().id())
