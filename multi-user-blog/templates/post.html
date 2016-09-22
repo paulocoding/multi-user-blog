@@ -13,7 +13,7 @@
       <div class="row">
         <div class="col-md-2">
           <a class="btn btn-default" href="#comments">
-            Comments <span class="badge">4</span>
+            Comments <span class="badge">{{post.get_comments_count()}}</span>
           </a>
         </div>
         <div class="col-md-4">
@@ -21,11 +21,11 @@
             <a href="/like/{{post.get_id()}}" class="btn btn-default">
               Like
               <span class="glyphicon glyphicon-thumbs-up" aria-hidden="true"></span>
-              <span class="badge">0</span>
+              <span class="badge">{{post.like_count()}}</span>
             </a>
           {% else %}
             <button class="btn btn-default" disabled="disabled">
-              <span class="badge">0</span>
+              <span class="badge">{{post.like_count()}}</span>
               Likes
             </button>
 
@@ -49,7 +49,38 @@
       </div>
     </div>
   </article>
+
+  <!--  comment section -->
   <div id="comments">
-    <!-- To do -->
+    <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Comment section</h3>
+        </div>
+        <div class="panel-body">
+
+          <div class="row">
+            <div class="well col-xs-12">
+              <form method="post">
+
+
+                <div class="form-group">
+                  <label for="comment">Post comment:</label>
+                  <textarea class="form-control" rows="2" id="comment" name="comment"></textarea>
+                </div>
+                <div class="form-group">
+                  <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+          {% for c in post.get_comments() %}
+          <div class="panel panel-default">
+            <div class="panel-heading">User {{c.author_name}} Commented:</div>
+            <div class="panel-body">{{c.content}}</div>
+          </div>
+          {% endfor %}
+        </div>
+    </div>
   </div>
 {% endblock %}

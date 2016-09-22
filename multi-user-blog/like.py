@@ -14,6 +14,13 @@ def get_likes_post(post_id):
     return likes.count()
 
 
+def del_likes(post_id):
+    """Delete the likes for provided post_id."""
+    likes = Post_like.all().filter('post_id =', post_id)
+    for l in likes:
+        l.delete()
+
+
 def liked(user_id, post_id):
     """Check if given user liked given post post_id."""
     liked = Post_like.all().filter('post_id =', post_id)

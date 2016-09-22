@@ -255,6 +255,25 @@ class PostHandler(Handler):
             self.render("no_post.html", general_message=general_message,
                         user=logged_user)
 
+    def post(self, post_id):
+        """Posting a new comment."""
+        logged_user = user.get_user_logged(self.request)
+        general_message = message.get_message(self.request, self.response)
+        current_post = post.get_post(post_id)
+        if current_post:
+            # add new comment
+            new_comment = self.request.get('comment')
+            if new_comment:
+                current_post.add_comment(new_comment, logged_user.name)
+                message.set_message(self.response, "New comment added.")
+            else:
+                message.set_message(self.response,
+                                    "Please add some text in the comment.")
+            self.redirect('/post/'+post_id)
+        else:
+            self.render("no_post.html", general_message=general_message,
+                        user=logged_user)
+
 
 class DeletePostHandler(Handler):
     """Delete post page."""
@@ -266,7 +285,7 @@ class DeletePostHandler(Handler):
             if logged_user.get_id() == current_post.author_id:
                 message.set_message(self.response,
                                     "'%s' post deleted." % current_post.title)
-                current_post.delete()
+                current_post.delete_full()
                 self.redirect('/')
             else:
                 message.set_message(self.response,
@@ -280,7 +299,7 @@ class DeletePostHandler(Handler):
 
 
 class LikePostHandler(Handler):
-    """Individual post page."""
+    """Like a post Handler."""
 
     def get(self, post_id):
         logged_user = user.get_user_logged(self.request)
@@ -289,7 +308,8 @@ class LikePostHandler(Handler):
                 if current_post.like_me(logged_user.get_id()):
                     message.set_message(self.response, "Post Liked")
                 else:
-                    message.set_message(self.response, "Post already Liked")
+                    message.set_message(self.response,
+                                        "You already Liked this post")
                 self.redirect('/')
 
         else:
@@ -299,7 +319,7 @@ class LikePostHandler(Handler):
 
 
 class EditPostHandler(Handler):
-    """Individual post page."""
+    """Edit post page."""
 
     def get(self, post_id):
         logged_user = user.get_user_logged(self.request)
