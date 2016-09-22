@@ -1,4 +1,4 @@
-"""Post class and related methods."""
+"""Auxiliary Comment class and related methods."""
 from google.appengine.ext import db
 
 

@@ -27,7 +27,7 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
-
+# Helper methods for Handlers
 class Handler(webapp2.RequestHandler):
     """Handler helper methods."""
 
@@ -40,25 +40,6 @@ class Handler(webapp2.RequestHandler):
 
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
-
-# posts = []
-# posts.append(Post("Post Title", "Lorem ipsum dolor sit amet, consectetur \
-#                   adipisicing elit, sed do eiusmod tempor incididunt ut labore\
-#                    et dolore magna aliqua. Ut enim ad minim veniam, quis \
-#                    nostrud exercitation ullamco laboris nisi ut aliquip ex ea \
-#                    commodo consequat. Duis aute irure dolor in reprehenderit \
-#                    in voluptate velit esse cillum dolore eu fugiat nulla \
-#                    pariatur. Excepteur sint occaecat cupidatat non proident, \
-#                    sunt in culpa qui officia deserunt mollit anim id est \
-#                    laborum.", "me", 0))
-# posts.append(Post("Post 2", "Sed do eiusmod tempor incididunt ut labore\
-#                   et dolore magna aliqua. Ut enim ad minim veniam, quis \
-#                   nostrud exercitation ullamco laboris nisi ut aliquip ex ea \
-#                   commodo consequat. Duis aute irure dolor in reprehenderit \
-#                   in voluptate velit esse cillum dolore eu fugiat nulla \
-#                   pariatur. Excepteur sint occaecat cupidatat non proident, \
-#                   sunt in culpa qui officia deserunt mollit anim id est \
-#                   laborum.", "me", 0))
 
 
 class MainHandler(Handler):
@@ -107,7 +88,6 @@ class SignupHandler(Handler):
         error_verify = ""
 
         # validating form
-
         userValid = user.valid_username(username)
         userExists = False
         if userValid:
@@ -236,7 +216,6 @@ class NewPostHandler(Handler):
                 self.render("new_post.html", general_message=general_message,
                             user=logged_user, error_post=error_post,
                             title=title, content=content)
-
         else:
             self.redirect('/login')
 
@@ -275,8 +254,29 @@ class PostHandler(Handler):
                         user=logged_user)
 
 
+class ConfirmHandler(Handler):
+    """Confirm page to delete a post."""
+
+    def get(self, post_id):
+        logged_user = user.get_user_logged(self.request)
+        current_post = post.get_post(post_id)
+        general_message = message.get_message(self.request, self.response)
+        if current_post:
+            if logged_user.get_id() == current_post.author_id:
+                self.render("confirm.html", general_message=general_message,
+                            user=logged_user, post=current_post)
+            else:
+                message.set_message(self.response,
+                                    "Only the post author can delete a post")
+                self.redirect('/')
+
+        else:
+            self.render("no_post.html", general_message=general_message,
+                        user=logged_user)
+
+
 class DeletePostHandler(Handler):
-    """Delete post page."""
+    """Delete given post."""
 
     def get(self, post_id):
         logged_user = user.get_user_logged(self.request)
@@ -356,6 +356,7 @@ class EditPostHandler(Handler):
             message.set_message('Only the author can edit this post.')
             self.redirect('/')
 
+# Routes:
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
@@ -367,5 +368,6 @@ app = webapp2.WSGIApplication([
     ('/post/(\d+)', PostHandler),
     ('/like/(\d+)', LikePostHandler),
     ('/edit/(\d+)', EditPostHandler),
-    ('/delete/(\d+)', DeletePostHandler)
+    ('/delete/(\d+)', ConfirmHandler),
+    ('/delete_post/(\d+)', DeletePostHandler)
 ], debug=True)

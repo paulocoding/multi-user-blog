@@ -4,7 +4,7 @@
   <title>MU-Blog</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <style media="screen">
     .pad{
       padding: 15px;
@@ -39,12 +39,14 @@
         {% endif %}
       </div>
     </header>
+    <!-- message -->
     {% if general_message %}
       <div>
         <p class="bg-warning text-warning pad">{{ general_message }}</p>
       </div>
     {% endif %}
-
+    
+    <!-- content -->
     {% block content %}
     {% endblock %}
   </div>
