@@ -16,8 +16,8 @@ run web app using goggle's appengine.
 * Intall appengine
   * https://cloud.google.com/sdk/docs/
 * run web server using this command on 'multi-user-blog' project directory
-  ```Bash
-    dev_appserver.py .
+  ```
+    $ dev_appserver.py .
   ```
 * Open link provided by appengine on a browser
 

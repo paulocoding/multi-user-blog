@@ -17,9 +17,9 @@
 import os
 import webapp2
 import jinja2
-import user
-import post
-import message
+from models import user
+from models import post
+from models import message
 
 
 # setting up jinja2
@@ -160,15 +160,17 @@ class LoginHandler(Handler):
             userValid = user.valid_username(username)
             if pwValid and userValid:
                 user_obj = user.get_user(username)
-                if user.valid_login(username, pw, user_obj.pwhash):
-                    # set cookie
-                    user_obj.set_cookie(self.response)
-                    self.redirect('/welcome')
+                if user_obj:
+                    if user.valid_login(username, pw, user_obj.pwhash):
+                        # set cookie
+                        user_obj.set_cookie(self.response)
+                        message.set_message(self.response,
+                                            "You are now logged in")
+                        self.redirect('/welcome')
             general_message = message.get_message(self.request, self.response)
             error_login = "Invalid Login"
             self.render("login.html", general_message=general_message,
                         error_login=error_login)
-            message.set_message(self.response, "You are now logged in")
         else:
             self.redirect('/')
 
@@ -315,7 +317,6 @@ class DeletePostHandler(Handler):
             message.set_message(self.response,
                                 "You need to login to delete posts.")
             self.redirect('/login')
-
 
 
 class LikePostHandler(Handler):
