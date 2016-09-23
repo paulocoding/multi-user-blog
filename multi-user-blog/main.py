@@ -197,6 +197,8 @@ class NewPostHandler(Handler):
             self.render("new_post.html", general_message=general_message,
                         user=logged_user, error_post=error_post)
         else:
+            message.set_message(self.response,
+                                "You need to login to add posts.")
             self.redirect('/login')
 
     def post(self):
@@ -240,15 +242,21 @@ class PostHandler(Handler):
         general_message = message.get_message(self.request, self.response)
         current_post = post.get_post(post_id)
         if current_post:
-            # add new comment
-            new_comment = self.request.get('comment')
-            if new_comment:
-                current_post.add_comment(new_comment, logged_user.name)
-                message.set_message(self.response, "New comment added.")
+            if logged_user:
+                # add new comment
+                new_comment = self.request.get('comment')
+                if new_comment:
+                    current_post.add_comment(new_comment, logged_user.name)
+                    message.set_message(self.response, "New comment added.")
+                else:
+                    message.set_message(self.response,
+                                        "Please add some text in the comment.")
+                self.redirect('/post/'+post_id)
             else:
                 message.set_message(self.response,
-                                    "Please add some text in the comment.")
-            self.redirect('/post/'+post_id)
+                                    "You need to login to post comments.")
+                self.redirect('/post/'+post_id)
+
         else:
             self.render("no_post.html", general_message=general_message,
                         user=logged_user)
@@ -261,18 +269,24 @@ class ConfirmHandler(Handler):
         logged_user = user.get_user_logged(self.request)
         current_post = post.get_post(post_id)
         general_message = message.get_message(self.request, self.response)
-        if current_post:
-            if logged_user.get_id() == current_post.author_id:
-                self.render("confirm.html", general_message=general_message,
-                            user=logged_user, post=current_post)
-            else:
-                message.set_message(self.response,
-                                    "Only the post author can delete a post")
-                self.redirect('/')
+        if logged_user:
+            if current_post:
+                if logged_user.get_id() == current_post.author_id:
+                    self.render("confirm.html",
+                                general_message=general_message,
+                                user=logged_user, post=current_post)
+                else:
+                    message.set_message(self.response,
+                                        "Only the post author can delete a post")
+                    self.redirect('/')
 
+            else:
+                self.render("no_post.html", general_message=general_message,
+                            user=logged_user)
         else:
-            self.render("no_post.html", general_message=general_message,
-                        user=logged_user)
+            message.set_message(self.response,
+                                "You need to login to delete posts.")
+            self.redirect('/login')
 
 
 class DeletePostHandler(Handler):
@@ -281,21 +295,27 @@ class DeletePostHandler(Handler):
     def get(self, post_id):
         logged_user = user.get_user_logged(self.request)
         current_post = post.get_post(post_id)
-        if current_post:
-            if logged_user.get_id() == current_post.author_id:
-                message.set_message(self.response,
-                                    "'%s' post deleted." % current_post.title)
-                current_post.delete_full()
-                self.redirect('/')
-            else:
-                message.set_message(self.response,
-                                    "Only the post author can delete a post")
-                self.redirect('/')
+        if logged_user:
+            if current_post:
+                if logged_user.get_id() == current_post.author_id:
+                    message.set_message(self.response,
+                                        "'%s' post deleted." % current_post.title)
+                    current_post.delete_full()
+                    self.redirect('/')
+                else:
+                    message.set_message(self.response,
+                                        "Only the post author can delete a post")
+                    self.redirect('/')
 
+            else:
+                general_message = message.get_message(self.request, self.response)
+                self.render("no_post.html", general_message=general_message,
+                            user=logged_user)
         else:
-            general_message = message.get_message(self.request, self.response)
-            self.render("no_post.html", general_message=general_message,
-                        user=logged_user)
+            message.set_message(self.response,
+                                "You need to login to delete posts.")
+            self.redirect('/login')
+
 
 
 class LikePostHandler(Handler):
@@ -305,13 +325,17 @@ class LikePostHandler(Handler):
         logged_user = user.get_user_logged(self.request)
         current_post = post.get_post(post_id)
         if current_post:
+            if logged_user:
                 if current_post.like_me(logged_user.get_id()):
                     message.set_message(self.response, "Post Liked")
                 else:
                     message.set_message(self.response,
                                         "You already Liked this post")
-                self.redirect('/')
-
+                self.redirect('/post/'+post_id)
+            else:
+                message.set_message(self.response,
+                                    "You need to login to like posts.")
+                self.redirect('/login')
         else:
             general_message = message.get_message(self.request, self.response)
             self.render("no_post.html", general_message=general_message,
@@ -325,13 +349,18 @@ class EditPostHandler(Handler):
         logged_user = user.get_user_logged(self.request)
         current_post = post.get_post(post_id)
         general_message = message.get_message(self.request, self.response)
-        if current_post and current_post.author_id == logged_user.get_id():
-            self.render("edit_post.html", general_message=general_message,
-                        user=logged_user, title=current_post.title,
-                        content=current_post.content)
+        if logged_user:
+            if current_post and current_post.author_id == logged_user.get_id():
+                self.render("edit_post.html", general_message=general_message,
+                            user=logged_user, title=current_post.title,
+                            content=current_post.content)
+            else:
+                self.render("no_post.html", general_message=general_message,
+                            user=logged_user)
         else:
-            self.render("no_post.html", general_message=general_message,
-                        user=logged_user)
+            message.set_message(self.response,
+                                "You need to login to edit posts")
+            self.redirect('/login')
 
     def post(self, post_id):
         logged_user = user.get_user_logged(self.request)
