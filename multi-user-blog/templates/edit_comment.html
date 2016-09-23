@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+  {% block content %}
+  {% if error_comment %}
+    <div class="row">
+      <div class="col-xs-12"><p class="bg-danger text-danger pad-sml">{{error_comment}}</p></div>
+    </div>
+  {% endif %}
+  <div id="comments">
+    <div class="panel panel-default">
+        <div class="panel-body">
+          <div class="row">
+            <div class="well col-xs-12">
+              <form method="post">
+                <div class="form-group">
+                  <label for="comment">Edit comment:</label>
+                  <textarea class="form-control" rows="2" id="comment" name="comment">{{content}}</textarea>
+                </div>
+                <div class="form-group">
+                  <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+{% endblock %}

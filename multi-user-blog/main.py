@@ -20,6 +20,7 @@ import jinja2
 from models import user
 from models import post
 from models import message
+from models import comment
 
 
 # setting up jinja2
@@ -386,6 +387,84 @@ class EditPostHandler(Handler):
             message.set_message('Only the author can edit this post.')
             self.redirect('/')
 
+
+class EditCommentHandler(Handler):
+    """Edit Comment page."""
+
+    def get(self, com_id):
+        logged_user = user.get_user_logged(self.request)
+        current_com = comment.get_comment(com_id)
+        general_message = message.get_message(self.request, self.response)
+        if logged_user:
+            # for simplicity and since user names are unique, I use the
+            # user name for autentication instead of user id.
+            if current_com and current_com.author_name == logged_user.name:
+                self.render("edit_comment.html",
+                            general_message=general_message,
+                            user=logged_user, content=current_com.content)
+            else:
+                self.render("no_com.html", general_message=general_message,
+                            user=logged_user)
+        else:
+            message.set_message(self.response,
+                                "You need to login to edit comments")
+            self.redirect('/login')
+
+    def post(self, com_id):
+        logged_user = user.get_user_logged(self.request)
+        current_com = comment.get_comment(com_id)
+        if current_com:
+            post_id = current_com.post_id
+            if logged_user and current_com.author_name == logged_user.name:
+                content = self.request.get('comment')
+                if content:
+                    current_com.content = content
+                    current_com.put()
+                    message.set_message(self.response, "Comment edited.")
+                    self.redirect('/post/'+post_id)
+                else:
+                    general_message = ""
+                    error_comment = "Please write something on the comment:   "
+                    self.render("edit_comment.html",
+                                general_message=general_message,
+                                user=logged_user, error_comment=error_comment,
+                                content=content)
+            else:
+                message.set_message('Only the author can edit this comment.')
+                self.redirect('/post/'+post_id)
+        else:
+            self.render("no_com.html", general_message=general_message,
+                        user=logged_user)
+
+
+class DeleteCommentHandler(Handler):
+    """Delete given comment."""
+
+    def get(self, com_id):
+        logged_user = user.get_user_logged(self.request)
+        current_com = comment.get_comment(com_id)
+        if logged_user:
+            if current_com:
+                post_id = current_com.post_id
+                if current_com.author_name == logged_user.name:
+                    message.set_message(self.response, "Comment deleted.")
+                    current_com.delete()
+                    self.redirect('/post/'+post_id)
+                else:
+                    message.set_message(self.response,
+                                        "Only the comment author can delete it")
+                    self.redirect('/post/'+post_id)
+
+            else:
+                general_message = message.get_message(self.request, self.response)
+                self.render("no_com.html", general_message=general_message,
+                            user=logged_user)
+        else:
+            message.set_message(self.response,
+                                "You need to login to delete comments.")
+            self.redirect('/login')
+
+
 # Routes:
 
 app = webapp2.WSGIApplication([
@@ -399,5 +478,7 @@ app = webapp2.WSGIApplication([
     ('/like/(\d+)', LikePostHandler),
     ('/edit/(\d+)', EditPostHandler),
     ('/delete/(\d+)', ConfirmHandler),
-    ('/delete_post/(\d+)', DeletePostHandler)
+    ('/delete_post/(\d+)', DeletePostHandler),
+    ('/delete_com/(\d+)', DeleteCommentHandler),
+    ('/edit_com/(\d+)', EditCommentHandler)
 ], debug=True)

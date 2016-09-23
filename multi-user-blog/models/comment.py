@@ -1,6 +1,13 @@
 """Auxiliary Comment class and related methods."""
 from google.appengine.ext import db
 
+def get_comment(com_id):
+    """Get the comments for a given id."""
+    if com_id.isdigit():
+        com_id = int(com_id)
+        return Comment.get_by_id(com_id)
+    else:
+        return None
 
 def get_comments(post_id):
     """Get all the comments for a given post."""
